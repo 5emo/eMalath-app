@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Care Hub</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="navBarStyle.css">
+    <link rel="stylesheet" href="features/elderly.css">
+    <style>
+        body { background: #f4f7fe; font-family: 'Segoe UI', sans-serif; }
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding: 25px;
+            padding-bottom: 100px;
+        }
+        .buttonR {border-radius: 16px; background-color: #4F46E5; color: #ffffff;}
+        .card { border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin-bottom: 20px; }
+        .bg-pending { background: #fffbeb !important; border: 1px solid #fde68a !important; color: #92400e !important; }
+        .bg-approved { background: #f0fdf4 !important; border: 1px solid #bbf7d0 !important; color: #166534 !important; }
+        .bg-declined { background: #fef2f2 !important; border: 1px solid #fecaca !important; color: #991b1b !important; }
+        .appointment-card { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <h2 id="myCare" class="mb-4 fw-bold text-center">My Care Dashboard</h2>
+        <div id="hubContent"></div>
+        <div class="text-center mt-4">
+        </div>
+    </div>
+   <nav class="navbar bottom-nav">
+        <div class="container-fluid px-0">
+            <div class="d-flex w-100 justify-content-around text-center">
+                <a href="home.html" class="nav-link-custom">
+                    <img src="pictures/homeIcon.png" class="nav-icon-img" alt="Home"><br>
+                    <span class="nav-label" id="home">Home</span>
+                </a>
+                <a href="Medication.html" class="nav-link-custom">
+                    <img src="pictures/medIcon.png" class="nav-icon-img" alt="Meds"><br>
+                    <span class="nav-label" id="med">Meds</span>
+                </a>
+                <a href="sos.html" class="nav-link-custom">
+                    <img src="pictures/sosIcon.png" class="nav-icon-img" alt="SOS"><br>
+                    <span class="nav-label text-danger fw-bold" id="sos">SOS</span>
+                </a>
+                <a href="care_hub.html" class="nav-link-custom active">
+                    <img src="pictures/careIcon.png" class="nav-icon-img" alt="Care"><br>
+                    <span class="nav-label" id="care">Care</span>
+                </a>
+                <a href="profile.html" class="nav-link-custom">
+                    <img src="pictures/profileIcon.png" class="nav-icon-img" alt="Profile"><br>
+                    <span class="nav-label" id="profile">Profile</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script src="features/elderly.js"></script>
+    <script>
+        let lastDataString = "";
+
+        function loadHub() {
+            const email = localStorage.getItem('currentUserEmail');
+            let users = JSON.parse(localStorage.getItem('adv_users')) || [];
+            // Find the specific logged-in user
+            const user = users.find(u => u.email === email);
+
+            const currentData = JSON.stringify(user);
+            if (currentData === lastDataString) return;
+            lastDataString = currentData;
+
+            const content = document.getElementById('hubContent');
+            if (!user) {
+                content.innerHTML ="<div class='alert alert-warning'>" + t('User session not found. Please log in again.') + "</div>";
+                return;
+            }
+            content.innerHTML = "";
+
+            // --- 1. DYNAMIC STATUS LOGIC ---
+            let statusTitle = "";
+            let statusDesc = "";
+            let statusClass = `bg-${user.status}`;
+
+            if (user.status === 'pending') {
+                statusTitle = t('System Review');
+                statusDesc = t('Main Admin is verifying your documents.');
+            } 
+            else if (user.status === 'declined') {
+                statusTitle = t('Action Required');
+                statusDesc = t('Application declined. Check notes below.');
+            }
+            else if (user.status === 'approved') {
+                if (!user.checkupRequested && !user.appointment) {
+                    statusTitle = t('Account Active');
+                    statusDesc = t('Ready! Click below to request your check-up.');
+                }
+                else if (user.checkupRequested && !user.appointment) {
+                    const translatedZone = t(user.zone);
+                    statusTitle = t('The request was sent to the nearest hospital.');
+                    statusDesc = `<span>${t('Request sent to the')}</span> ${translatedZone}<span>${t('Waiting for assignment.')}</span>`;
+                } 
+                else if (user.appointment && !user.appointment.doctorDone) {
+                    const translatedStaff = t(user.appointment.staffName);
+                    statusTitle = t('Provider Assigned');
+                    statusDesc = `${translatedStaff} ${t('is confirmed for your visit.')}`;
+                }
+                else if (user.appointment && user.appointment.doctorDone) {
+                    statusTitle = t('Visit Completed');
+                    statusDesc = t('Doctor has finished. Awaiting hospital sign-off.');
+                }
+            }
+
+            // --- 2. RENDER STATUS CARD ---
+            const sCard = document.createElement('div');
+            sCard.className = `card p-4 text-center ${statusClass}`;
+            sCard.innerHTML = `<h5 class="fw-bold mb-1">${statusTitle}</h5><p class="mb-0 small opacity-75">${statusDesc}</p>`;
+            content.appendChild(sCard);
+
+            // --- 3. THE REQUEST BUTTON (Fixed Logic) ---
+            if (user.status === 'approved' && !user.checkupRequested && !user.appointment) {
+                const reqBtn = document.createElement('button');
+                reqBtn.className = "btn buttonR w-100 p-3 mb-3 fw-bold shadow-sm";
+                reqBtn.innerText = t('Request Check-up');
+                reqBtn.onclick = () => {
+                    let allUsers = JSON.parse(localStorage.getItem('adv_users')) || [];
+                    const uIdx = allUsers.findIndex(u => u.email === email);
+                    
+                    if (uIdx !== -1) {
+                        allUsers[uIdx].checkupRequested = true; // Set the flag
+                        localStorage.setItem('adv_users', JSON.stringify(allUsers)); // Save back to storage
+                        alert(t('Request Sent!'));
+                        loadHub(); // Refresh UI immediately
+                    }
+                };
+                content.appendChild(reqBtn);
+            }
+
+            // --- 4. APPOINTMENT CARD ---
+            if (user.appointment && !user.appointment.completed) {
+                const aCard = document.createElement('div');
+                const translatedStaff = t(user.appointment.staffName);
+                aCard.className = "card p-4 appointment-card shadow-lg";
+                aCard.innerHTML = `
+                    <h5 class="fw-bold mb-3 text-white">${t('visitDetails')}</h5>
+                    <p class="mb-1"><strong>${t('Staff')}:</strong> ${translatedStaff}</p>
+                    <p class="mb-0"><strong>${t('Time')}:</strong> ${user.appointment.date} @ ${user.appointment.time}</p>
+                    ${!user.appointment.doctorDone ? 
+                        `<button class="btn btn-outline-light btn-sm w-100 mt-4" onclick="requestChange()">${t('Request Provider Change')}</button>` : 
+                        `<div class="text-center small mt-3"><i>${t('Processing Visit Data...')}</i></div>`}
+                `;
+                content.appendChild(aCard);
+            }
+
+            // --- 5. DECLINE FEEDBACK ---
+            if (user.status === 'declined') {
+                const rCard = document.createElement('div');
+                rCard.className = "card p-4";
+                rCard.innerHTML = `<div class="alert alert-danger">Note: ${user.adminNote}</div>`;
+                content.appendChild(rCard);
+            }
+        }
+
+        function requestChange() {
+            const reason = prompt(t('Reason for change:'));
+            if (!reason) return;
+            const email = localStorage.getItem('currentUserEmail');
+            let users = JSON.parse(localStorage.getItem('adv_users'));
+            const idx = users.findIndex(u => u.email === email);
+            users[idx].conflictReason = reason;
+            users[idx].appointment = null; 
+            users[idx].checkupRequested = true; 
+            localStorage.setItem('adv_users', JSON.stringify(users));
+            loadHub();
+        }
+
+        setInterval(loadHub, 3000);
+        loadHub();
+
+        //navbar 
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function () {
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        //
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

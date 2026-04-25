@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eMalath Home</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="navBarStyle.css">
+    <link rel="stylesheet" href="features/elderly.css">
+    <style>
+        :root {
+            --primary-purple: #4F46E5;
+            --soft-green: #34c759;
+            --bg-light: #F8FAFC;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            font-family: sans-serif;
+            color: #1e1e1e;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding: 25px;
+            padding-bottom: 100px;
+        }
+
+        /* Header */
+        .user-name {
+            color: var(--primary-purple);
+            font-weight: 800;
+            font-size: 1.8rem;
+        }
+
+        .profile-circle {
+            width: 50px;
+            height: 50px;
+            background: #EEF2FF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-purple);
+            border: 1px solid #E2E8F0;
+        }
+
+        /* Health Score Card */
+        .score-card {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-radius: 24px;
+            padding: 30px;
+            color: white;
+            margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.15);
+        }
+
+        .score-val {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        /* Next Med Section */
+        .section-label {
+            font-weight: 700;
+            color: #64748b;
+            margin: 25px 0 12px 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .med-card-home {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+
+        .med-card-home.completed {
+            opacity: 0.6;
+            background: #f8fafc;
+        }
+
+        .check-icon-home {
+            color: var(--soft-green);
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: 2px solid var(--soft-green);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .take-btn-home,
+        .view-btn-home {
+            background: var(--primary-purple);
+            border-radius: 25px;
+            border: none;
+            padding: 8px 22px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Daily Report Section Spacing */
+        .daily-report-header {
+            margin-top: 35px !important;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f1f5f9;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .activity-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-purple);
+            border-color: var(--primary-purple);
+        }
+
+        .edit-btn {
+            font-size: 0.75rem;
+            color: var(--primary-purple);
+            background: #EEF2FF;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 id="goodMorning" class="mb-0 text-muted">Good Morning,</h5>
+                <div class="user-name" id="displayUsername">Guest</div>
+            </div>
+            <div class="profile-circle" id="userInitial">M</div>
+        </div>
+
+        <div class="score-card">
+            <span id="healthScoree" class="fw-bold opacity-75">Health Score</span>
+            <div class="score-val mt-2" id="healthScore">0%</div>
+            <p id="tryToComplete" class="mt-3 mb-0 small opacity-90" id="healthMessage">Try to complete your medication
+                and exercises to
+                boost your score.</p>
+        </div>
+
+        <div id="nextMedication" class="section-label">Next Medication</div>
+        <div id="nextMedDisplay">
+        </div>
+
+        <div class="d-flex justify-content-between align-items-end mb-2 daily-report-header">
+            <div id="dailyReport" class="section-label m-0">Daily Report</div>
+            <button id="editActivities" class="edit-btn" data-bs-toggle="modal" data-bs-target="#activityModal">Edit
+                Activities</button>
+        </div>
+
+        <div class="report-card">
+            <div id="activityList">
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <span id="Adherence" class="text-muted small">Adherence</span>
+                <span class="fw-bold" style="color: var(--primary-purple)" id="adherencePercent">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="activityModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px;">
+                <div class="modal-header border-0">
+                    <h5 id="manageActivities" class="modal-title fw-bold">Manage Activities</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" data-key="activitiess" id="newActivityInput" class="form-control"
+                            placeholder="e.g., Walking 30 mins">
+                        <button id="addd" class="btn btn-primary" onclick="addActivity()">Add</button>
+                    </div>
+                    <ul class="list-group list-group-flush" id="modalActivityList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar bottom-nav">
+        <div class="container-fluid px-0">
+            <div class="d-flex w-100 justify-content-around text-center">
+                <a href="home.html" class="nav-link-custom active">
+                    <img src="pictures/homeIcon.png" class="nav-icon-img" alt="Home"><br>
+                    <span class="nav-label" id="home">Home</span>
+                </a>
+                <a href="Medication.html" class="nav-link-custom">
+                    <img src="pictures/medIcon.png" class="nav-icon-img" alt="Meds"><br>
+                    <span class="nav-label" id="med">Meds</span>
+                </a>
+                <a href="sos.html" class="nav-link-custom">
+                    <img src="pictures/sosIcon.png" class="nav-icon-img" alt="SOS"><br>
+                    <span class="nav-label text-danger fw-bold" id="sos">SOS</span>
+                </a>
+                <a href="care_hub.html" class="nav-link-custom">
+                    <img src="pictures/careIcon.png" class="nav-icon-img" alt="Care"><br>
+                    <span class="nav-label" id="care">Care</span>
+                </a>
+                <a href="profile.html" class="nav-link-custom">
+                    <img src="pictures/profileIcon.png" class="nav-icon-img" alt="Profile"><br>
+                    <span class="nav-label" id="profile">Profile</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script src="features/elderly.js"></script>
+    <script>
+        let activities = JSON.parse(localStorage.getItem('daily_activities')) || [
+            { id: 1, name: "Physical Therapy", completed: false },
+            { id: 2, name: "Walking 20 mins", completed: false }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadUserData();
+            renderNextMed();
+            renderActivities();
+            calculateHealthScore();
+        });
+
+        function loadUserData() {
+            let requests = JSON.parse(localStorage.getItem("adv_users")) || [];
+            if (requests.length > 0) {
+                const user = requests[requests.length - 1];
+                document.getElementById("displayUsername").textContent = user.fullName;
+                document.getElementById("userInitial").textContent = user.fullName.charAt(0).toUpperCase();
+            }
+        }
+
+        function renderNextMed() {
+            const container = document.getElementById('nextMedDisplay');
+            let meds = JSON.parse(localStorage.getItem('persistent_meds')) || [];
+
+            // IF NO MEDS: Show View button
+            if (meds.length === 0) {
+                container.innerHTML = `
+                    <div class="med-card-home">
+                        <div class="d-flex align-items-center">
+                            <div style="font-size: 1.5rem; margin-right: 15px;">💊</div>
+                            <div>
+                                <div class="fw-bold">${t('noMedicationAdded')}</div>
+                                <div class="text-muted small">${t('clickOnView')}</div>
+                            </div>
+                        </div>
+                        <button class="view-btn-home" onclick="window.location.href='Medication.html'">${t('view')}</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // FIND NEXT MED
+            let nextMed = meds.filter(m => !m.completed).sort((a, b) => a.time.localeCompare(b.time))[0];
+            if (!nextMed) nextMed = meds.sort((a, b) => a.time.localeCompare(b.time))[0];
+
+            const medIdx = meds.indexOf(nextMed);
+
+            container.innerHTML = `
+                <div class="med-card-home ${nextMed.completed ? 'completed' : ''}">
+                    <div class="d-flex align-items-center">
+                        <div style="font-size: 1.5rem; margin-right: 15px;">💊</div>
+                        <div>
+                            <div class="fw-bold">${nextMed.name}</div>
+                            <div class="text-muted small">${formatAMPM(nextMed.time)} - ${nextMed.dosage}</div>
+                        </div>
+                    </div>
+                    <div>
+                        ${nextMed.completed
+                    ? '<div class="check-icon-home">✓</div>'
+                    : `<button class="take-btn-home" onclick="takeMed(${medIdx})">${t('Take')}</button>`}
+                    </div>
+                </div>
+            `;
+        }
+
+        function takeMed(index) {
+            let meds = JSON.parse(localStorage.getItem('persistent_meds'));
+            meds[index].completed = true;
+            localStorage.setItem('persistent_meds', JSON.stringify(meds));
+            renderNextMed();
+            calculateHealthScore();
+        }
+
+        function renderActivities() {
+            const list = document.getElementById('activityList');
+            const modalList = document.getElementById('modalActivityList');
+            list.innerHTML = ''; modalList.innerHTML = '';
+
+            activities.forEach(act => {
+                const translatedActivity = t(act.name);
+                list.innerHTML += `
+                    <div class="activity-item">
+                        <span class="small fw-medium">${translatedActivity}</span>
+                        <input class="form-check-input" type="checkbox" ${act.completed ? 'checked' : ''} onchange="toggleActivity(${act.id})">
+                    </div>
+                `;
+                modalList.innerHTML += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        ${translatedActivity}
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteActivity(${act.id})">✕</button>
+                    </li>
+                `;
+            });
+        }
+
+        function toggleActivity(id) {
+            const act = activities.find(a => a.id === id);
+            act.completed = !act.completed;
+            saveActivities();
+        }
+
+        function addActivity() {
+            const input = document.getElementById('newActivityInput');
+            if (input.value.trim()) {
+                activities.push({ id: Date.now(), name: input.value, completed: false });
+                input.value = '';
+                saveActivities();
+            }
+        }
+
+        function deleteActivity(id) {
+            activities = activities.filter(a => a.id !== id);
+            saveActivities();
+        }
+
+        function saveActivities() {
+            localStorage.setItem('daily_activities', JSON.stringify(activities));
+            renderActivities();
+            calculateHealthScore();
+        }
+
+        function calculateHealthScore() {
+            let meds = JSON.parse(localStorage.getItem('persistent_meds')) || [];
+            let medRatio = meds.length > 0 ? (meds.filter(m => m.completed).length / meds.length) : 0;
+            let actRatio = activities.length > 0 ? (activities.filter(a => a.completed).length / activities.length) : 0;
+
+            const totalScore = Math.round(((medRatio * 0.5) + (actRatio * 0.5)) * 100);
+            document.getElementById('healthScore').textContent = totalScore + "%";
+            document.getElementById('adherencePercent').textContent = Math.round(medRatio * 100) + "%";
+
+            const msgEl = document.getElementById('healthMessage');
+            if (totalScore === 0) {
+                msgEl.textContent = "Try to complete your medication and exercises to boost your score.";
+            } else if (totalScore < 50) {
+                msgEl.textContent = "Great start! Keep going to reach your daily goal.";
+            } else if (totalScore < 90) {
+                msgEl.textContent = "You're doing amazing! Almost at a perfect score.";
+            } else {
+                msgEl.textContent = "Outstanding! You've taken excellent care of yourself today.";
+            }
+        }
+
+        function formatAMPM(time) {
+            let [h, m] = time.split(':');
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${ampm}`;
+        }
+
+        //navbar 
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function () {
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

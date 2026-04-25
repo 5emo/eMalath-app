@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SOS</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="navBarStyle.css">
+    <link rel="stylesheet" href="features/elderly.css">
+    <style>
+        :root {
+            --emergency-red: #CB1D43;
+            --neon-glow: rgba(220, 53, 69, 0.5);
+        }
+
+        body {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        .sos-button {
+            width: 200px;
+            height: 200px;
+            background-color: var(--emergency-red);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 2.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, transform 0.1s;
+            animation: pulse-neon 2s infinite;
+            z-index: 1;
+        }
+
+        @keyframes pulse-neon {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 var(--neon-glow), 0 0 10px var(--emergency-red); }
+            70% { transform: scale(1); box-shadow: 0 0 0 30px rgba(220, 53, 69, 0), 0 0 20px var(--emergency-red); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0), 0 0 10px var(--emergency-red); }
+        }
+
+        .hide-text { color: transparent !important; }
+
+        #hold-countdown, #countdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5.5rem;
+            font-weight: 900;
+            color: white;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        #countdown-overlay img {
+            height: 5.5rem; 
+            width: auto;
+            display: block;
+        }
+        .contact-item { cursor: pointer; transition: 0.2s; }
+        .contact-item:active { background-color: #dee2e6 !important; }
+    </style>
+</head>
+<body style="background-color: #F8FAFC;">
+
+    <div class="app-container shadow-sm d-flex flex-column align-items-center justify-content-center min-vh-100 py-4" style="margin-bottom: 55px;">
+        
+        <div class="text-center mb-4">
+            <h1 id="status-text" class="display-4 fw-bold text-danger mb-0">SOS</h1>
+            <p id="pressAndHoldForSeconds" class="text-secondary fw-bold">Press and hold for 3 seconds</p>
+        </div>
+
+        <div class="position-relative mb-5 d-flex justify-content-center align-items-center">
+            <button id="sos-btn" class="sos-button shadow-lg">SOS</button>
+            <div id="hold-countdown" class="position-absolute top-50 start-50 translate-middle"></div>
+            <div id="countdown-overlay" class="position-absolute top-50 start-50 translate-middle d-none">10</div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 w-100 mb-4" style="max-width: 400px;">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3 px-3">
+                <h6 id="emergencyContacts" class="fw-bold mb-0">Emergency Contacts</h6>
+                <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="openEditModal()">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+            <div class="card-body pt-2" id="contact-list-container"></div>
+        </div>
+
+        <div class="alert alert-danger rounded-4 w-100 text-center border-0 py-3 mb-0" style="max-width: 400px;">
+            <h6 id="fallDetectionActive" class="alert-heading fw-bold mb-1 small">Fall Detection Active</h6>
+            <p id="automaticTriggersOnSuddenImpact" class="small mb-0 opacity-75" style="font-size: 0.75rem;">Automatic SOS triggers on sudden impact.</p>
+        </div>
+    </div>
+
+    <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="contactInfo">Contact Info</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-index">
+                    <div class="mb-3">
+                        <label id="name" class="form-label small fw-bold">Name</label>
+                        <input type="text" id="contact-name" data-key="daughter" class="form-control rounded-3" placeholder="Daughter">
+                    </div>
+                    <div class="mb-3">
+                        <label id="phoneNumber" class="form-label small fw-bold">Phone Number</label>
+                        <input type="tel" id="contact-phone" class="form-control rounded-3" placeholder="07********">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-link text-danger d-none me-auto" id="delete">Delete</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal" id="cancel">Cancel</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4" id="save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <nav class="navbar bottom-nav">
+        <div class="container-fluid px-0">
+            <div class="d-flex w-100 justify-content-around text-center">
+                <a href="home.html" class="nav-link-custom">
+                    <img src="pictures/homeIcon.png" class="nav-icon-img" alt="Home"><br>
+                    <span class="nav-label" id="home">Home</span>
+                </a>
+                <a href="Medication.html" class="nav-link-custom">
+                    <img src="pictures/medIcon.png" class="nav-icon-img" alt="Meds"><br>
+                    <span class="nav-label" id="med">Meds</span>
+                </a>
+                <a href="sos.html" class="nav-link-custom active">
+                    <img src="pictures/sosIcon.png" class="nav-icon-img" alt="SOS"><br>
+                    <span class="nav-label text-danger fw-bold" id="sos">SOS</span>
+                </a>
+                <a href="care_hub.html" class="nav-link-custom">
+                    <img src="pictures/careIcon.png" class="nav-icon-img" alt="Care"><br>
+                    <span class="nav-label" id="care">Care</span>
+                </a>
+                <a href="profile.html" class="nav-link-custom">
+                    <img src="pictures/profileIcon.png" class="nav-icon-img" alt="Profile"><br>
+                    <span class="nav-label" id="profile">Profile</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script src="features/elderly.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sosBtn = document.getElementById('sos-btn');
+        const holdDisplay = document.getElementById('hold-countdown');
+        const alertOverlay = document.getElementById('countdown-overlay');
+        const statusText = document.getElementById('status-text');
+        const instructionText = document.getElementById('pressAndHoldForSeconds');
+        const contactContainer = document.getElementById('contact-list-container');
+        const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
+
+        let contacts = JSON.parse(localStorage.getItem('emergencyContacts')) || [
+            { name: "Emergency Contact", phone: "911" }
+        ];
+
+        let holdTimer, alertTimer;
+        let holdValue = 0;
+        let alertTimeLeft = 10; 
+        let isEmergencyActive = false;
+
+        function renderContacts() {
+            contactContainer.innerHTML = '';
+            contacts.forEach((c, i) => {
+                const div = document.createElement('div');
+                div.className = "d-flex align-items-center bg-light p-2 rounded-pill border mb-2 contact-item";
+                div.innerHTML = `<div class="bg-secondary rounded-circle me-3" style="width:35px;height:35px"></div>
+                                <span class="flex-grow-1 fw-medium">${c.name}</span>
+                                <a href="tel:${c.phone}" class="btn btn-sm text-secondary" onclick="event.stopPropagation()"><i class="fa-solid fa-phone"></i></a>`;
+                div.onclick = () => openEditModal(i);
+                contactContainer.appendChild(div);
+            });
+            localStorage.setItem('emergencyContacts', JSON.stringify(contacts));
+        }
+
+        function openEditModal(index = null) {
+            const isEdit = index !== null;
+            document.getElementById('contactInfo').innerText = isEdit ? t('Edit Contact') : t('Add Contact');
+            document.getElementById('edit-index').value = isEdit ? index : "";
+            document.getElementById('contact-name').value = isEdit ? contacts[index].name : "";
+            document.getElementById('contact-phone').value = isEdit ? contacts[index].phone : "";
+            document.getElementById('delete').classList.toggle('d-none', !isEdit);
+            contactModal.show();
+        }
+
+        document.getElementById('save').onclick = () => {
+            const name = document.getElementById('contact-name').value;
+            const phone = document.getElementById('contact-phone').value;
+            const i = document.getElementById('edit-index').value;
+            if (name && phone) {
+                if (i !== "") contacts[i] = { name, phone };
+                else contacts.push({ name, phone });
+                renderContacts();
+                contactModal.hide();
+            }
+        };
+
+        document.getElementById('delete').onclick = () => {
+            contacts.splice(document.getElementById('edit-index').value, 1);
+            renderContacts();
+            contactModal.hide();
+        };
+
+        function startHold(e) {
+            e.preventDefault();
+            clearInterval(holdTimer);
+            
+            if (!isEmergencyActive) {
+                holdValue = 3;
+                sosBtn.classList.add('hide-text');
+                holdDisplay.innerText = holdValue;
+                holdTimer = setInterval(() => {
+                    holdValue--;
+                    holdDisplay.innerText = holdValue > 0 ? holdValue : "";
+                    if (holdValue <= 0) { 
+                        clearInterval(holdTimer); 
+                        triggerAlert(); 
+                    }
+                }, 1000);
+            } else {
+                holdValue = 5;
+                alertOverlay.classList.add('d-none'); 
+                holdDisplay.innerText = holdValue;
+                instructionText.innerText = t('CANCELING...');
+                
+                holdTimer = setInterval(() => {
+                    holdValue--;
+                    holdDisplay.innerText = holdValue > 0 ? holdValue : "";
+                    if (holdValue <= 0) { 
+                        clearInterval(holdTimer); 
+                        resetApp(); 
+                    }
+                }, 1000);
+            }
+        }
+
+        function stopHold() {
+            clearInterval(holdTimer);
+            holdDisplay.innerText = "";
+            holdValue = 0;
+            
+            if (!isEmergencyActive) {
+                sosBtn.classList.remove('hide-text');
+            } else {
+                alertOverlay.classList.remove('d-none');
+                instructionText.innerHTML =t('TO CANCEL HOLD FOR 5 SECONDS');
+            }
+        }
+
+        function triggerAlert() {
+            isEmergencyActive = true;
+            alertTimeLeft = 10;
+            
+            statusText.innerText = t('ALERT TRIGGERED');
+            instructionText.innerHTML =t('TO CANCEL HOLD FOR 5 SECONDS');
+            instructionText.classList.add('text-danger');
+            
+            alertOverlay.classList.remove('d-none');
+            alertOverlay.innerText = alertTimeLeft;
+            sosBtn.classList.add('hide-text');
+
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+
+            alertTimer = setInterval(() => {
+                alertTimeLeft--;
+                alertOverlay.innerText = alertTimeLeft;
+
+                if (holdValue > 0) alertOverlay.classList.add('d-none');
+
+                if (alertTimeLeft <= 0) { 
+                    clearInterval(alertTimer); 
+                    if (isEmergencyActive) executeCall(); 
+                }
+            }, 1000);
+                }
+
+        function resetApp() {
+            clearInterval(alertTimer);
+            isEmergencyActive = false;
+            statusText.innerText = t('SOS');
+            instructionText.innerText = t('Press and hold for 3 seconds');
+            instructionText.classList.remove('text-danger');
+            sosBtn.classList.remove('hide-text');
+            alertOverlay.classList.add('d-none');
+            holdDisplay.innerText = "";
+            if (navigator.vibrate) navigator.vibrate(200);
+        }
+
+        function executeCall() {
+            alertOverlay.classList.remove('d-none');
+            alertOverlay.innerHTML = '<img src="pictures/telephone.png" alt="Phone ringing">';
+            const target = contacts.length > 0 ? contacts[0].phone : "911";
+            window.location.href = `tel:${target}`;
+        }
+
+        window.addEventListener('devicemotion', (e) => {
+            const acc = e.accelerationIncludingGravity;
+            if (!acc || isEmergencyActive) return;
+            const total = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
+            if (total > 35) triggerAlert();
+        });
+
+        sosBtn.addEventListener('mousedown', startHold);
+        sosBtn.addEventListener('mouseup', stopHold);
+        sosBtn.addEventListener('touchstart', startHold);
+        sosBtn.addEventListener('touchend', stopHold);
+
+        renderContacts();
+        //navbar 
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        //
+        function updateLanguage() {
+            const lang = localStorage.getItem("lang") || "en";
+            const isArabic = lang === "ar";
+
+            document.body.dir = isArabic ? "rtl" : "ltr";
+
+            for(const id in translations){
+                const el = document.getElementById(id);
+                if(el) el.textContent = isArabic ? translations[id].ar : translations[id].en;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", updateLanguage);
+        window.addEventListener("storage", (e) => {
+            if(e.key === "lang") updateLanguage();
+        });
+    </script>
+</body>
+</html>

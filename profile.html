@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link rel="stylesheet" href="navBarStyle.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="elderly.css">
+    <style>
+        :root {
+            --primary-purple: #4F46E5;
+            --bg-light: #F8FAFC;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            font-family: sans-serif;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding: 25px;
+            padding-bottom: 10px;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .settings-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 15px;
+        }
+
+        .section-label {
+            font-weight: 700;
+            color: #000;
+            margin: 5px 0 15px 0;
+            font-size: 1.2rem;
+        }
+
+        .profile-feature .profile-image {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            border: 3px solid var(--primary-purple);
+            display: block;
+            margin: 0 auto;
+        }
+
+        #usernameD {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .lang-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-buttons button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            font-weight: 600;
+        }
+
+        .lang-buttons .active {
+            background-color: var(--primary-purple);
+            border-color: var(--primary-purple);
+            color: white;
+        }
+
+        .nav-label {
+            font-size: 0.8rem;
+        }
+
+        .custom-switch {
+            width: 3.5em !important;
+            height: 1.8em !important;
+            cursor: pointer;
+        }
+
+        .form-check-input:checked {
+            background-color: #4F46E5;
+            border-color: #4F46E5;
+        }
+
+        body.elderly-mode {
+            font-size: 1.3rem !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        /* Ensure Arabic text alignment for the whole body */
+        body[dir="rtl"] {
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <h1 class="header-title" id="ProfileAndSettings">Profile</h1>
+
+        <div class="settings-card text-center">
+            <div class="profile-feature">
+                <img src="pictures/profile(default).png" id="profileImage" class="profile-image">
+                <p id="usernameD">User</p>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            </div>
+        </div>
+
+        <h4 class="section-label" id="Settings">Settings</h4>
+
+        <div class="settings-card">
+            <h6 class="fw-bold mb-3" style="font-size: 0.9rem; color: #64748b;">LANGUAGE / اللغة</h6>
+            <div class="lang-buttons">
+                <button id="btn-ar">العربية</button>
+                <button id="btn-en">English</button>
+            </div>
+        </div>
+        <div class="settings-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 ">
+                <span id="txt-elderly" style="font-weight: 600; font-size: 1.1rem;">Elderly Mode</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input custom-switch" type="checkbox" id="elderlySwitch"
+                        onchange="toggleElderly(this.checked)">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <span id="voiceAssistant" style="font-weight: 600; font-size: 1.1rem;">Voice Assistant (Hey
+                    Malath)</span>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="voiceSwitch"
+                        style="width: 3.5em; height: 1.8em; cursor: pointer;"
+                        onchange="toggleVoiceAssistant(this.checked)">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="settings-card">
+            <button onclick="logout()" class="btn w-100"
+                style="background-color: #FEE2E2; color: #EF4444; border-radius: 15px; padding: 12px; font-weight: 700; border: none; margin-bottom: 10px;">
+                <span id="txt-logout">Log out</span>
+            </button>
+        </div>
+        <nav class="navbar bottom-nav">
+            <div class="container-fluid px-0">
+                <div class="d-flex w-100 justify-content-around text-center">
+                    <a href="home.html" class="nav-link-custom">
+                        <img src="pictures/homeIcon.png" class="nav-icon-img" alt="Home"><br>
+                        <span class="nav-label" id="home">Home</span>
+                    </a>
+                    <a href="Medication.html" class="nav-link-custom">
+                        <img src="pictures/medIcon.png" class="nav-icon-img" alt="Meds"><br>
+                        <span class="nav-label" id="med">Meds</span>
+                    </a>
+                    <a href="sos.html" class="nav-link-custom">
+                        <img src="pictures/sosIcon.png" class="nav-icon-img" alt="SOS"><br>
+                        <span class="nav-label text-danger fw-bold" id="sos">SOS</span>
+                    </a>
+                    <a href="care_hub.html" class="nav-link-custom">
+                        <img src="pictures/careIcon.png" class="nav-icon-img" alt="Care"><br>
+                        <span class="nav-label" id="care">Care</span>
+                    </a>
+                    <a href="profile.html" class="nav-link-custom active">
+                        <img src="pictures/profileIcon.png" class="nav-icon-img" alt="Profile"><br>
+                        <span class="nav-label" id="profile">Profile</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script src="elderly.js"></script>
+    <script>
+        
+        function loadUserData() {
+            let requests = JSON.parse(localStorage.getItem("adv_users")) || [];
+            if (requests.length > 0) {
+                const user = requests[requests.length - 1];
+                document.getElementById("usernameD").innerHTML = user.fullName;
+            }
+        }
+        loadUserData();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const btnAr = document.getElementById("btn-ar");
+            const btnEn = document.getElementById("btn-en");
+            const currentLang = localStorage.getItem("lang") || "en";
+
+            // Apply direction immediately
+            document.body.dir = (currentLang === "ar") ? "rtl" : "ltr";
+
+            if (currentLang === "ar") btnAr.classList.add("active");
+            else btnEn.classList.add("active");
+
+            // Simplified logic to prevent lag: Save and Reload
+            btnAr.onclick = () => {
+                if (localStorage.getItem("lang") === "ar") return;
+                localStorage.setItem("lang", "ar");
+                location.reload();
+            };
+
+            btnEn.onclick = () => {
+                if (localStorage.getItem("lang") === "en") return;
+                localStorage.setItem("lang", "en");
+                location.reload();
+            };
+        });
+
+        function toggleElderly(val) {
+            localStorage.setItem("elderlyMode", val);
+            document.body.classList.toggle("elderly-mode", val);
+        }
+
+        function logout() {
+            if (confirm("Are you sure you want to log out?")) {
+                window.location.href = "login.html";
+            }
+        }
+
+        document.getElementById("elderlySwitch").checked = localStorage.getItem("elderlyMode") === "true";
+
+        // Voice Assistant logic remains unchanged
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                const currentLang = localStorage.getItem("lang") || "en";
+                if (transcript.includes("malath") || transcript.includes("ملاذ")) {
+                    processVoiceCommand(transcript, currentLang);
+                }
+            };
+
+            recognition.onend = () => {
+                if (localStorage.getItem("voiceActive") === "true") {
+                    try { recognition.start(); } catch (e) { }
+                }
+            };
+        }
+
+        async function toggleVoiceAssistant(isEnabled) {
+            const currentLang = localStorage.getItem("lang") || "en";
+            if (isEnabled) {
+                const userAccepted = confirm(currentLang === "ar" ? "تفعيل المساعد الصوتي؟" : "Enable Voice Assistant?");
+                if (userAccepted) {
+                    try {
+                        await navigator.mediaDevices.getUserMedia({ audio: true });
+                        localStorage.setItem("voiceActive", "true");
+                        recognition.lang = (currentLang === "ar") ? 'ar-SA' : 'en-US';
+                        recognition.start();
+                    } catch (err) {
+                        localStorage.setItem("voiceActive", "false");
+                        document.getElementById("voiceSwitch").checked = false;
+                    }
+                } else {
+                    document.getElementById("voiceSwitch").checked = false;
+                }
+            } else {
+                localStorage.setItem("voiceActive", "false");
+                if (recognition) recognition.stop();
+            }
+        }
+    </script>
+</body>
+
+</html>

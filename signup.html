@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+        .form-card {
+            max-width: 700px;
+            margin: 0px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-indigo {
+            background: #4F46E5;
+            color: white;
+            border-radius: 20px;
+            padding: 14px;
+            font-weight: bold;
+            border: none;
+        }
+
+        .btn-indigo:hover {
+            background: #4338ca;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="form-card">
+            <h1 class="text-center" id="signup-title">Create Account
+                <span style="color: #64748B;display: block; font-size: 18px; margin-top: 8px;" id="signup-subtitle">Join
+                    our community</span>
+            </h1>
+            <form id="signupForm">
+                <div class="row g-3">
+                    <div class="col-12 col-sm-8">
+                        <label class="form-label fw-bold" id="label-fullname">Full Name</label>
+                        <input type="text" id="fullName" class="form-control form-control-lg" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="form-label fw-bold" id="label-age">Age</label>
+                        <input type="number" id="age" class="form-control form-control-lg" required>
+                    </div>
+
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-bold" id="label-email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-bold" id="label-phone">Phone</label>
+                        <input type="tel" id="phone" class="form-control" required>
+                    </div>
+
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-bold" id="label-pass">Password</label>
+                        <input type="password" id="pass" class="form-control" required>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-bold" id="label-confirm">Confirm Password</label>
+                        <input type="password" id="confirmPass" class="form-control" required>
+                    </div>
+
+                    <div class="col-12 col-sm-5">
+                        <label class="form-label fw-bold" id="label-zone">General Zone</label>
+                        <select id="zone" class="form-select" required>
+                            <option value="" id="opt-select">Select Area...</option>
+                            <option value="North" id="opt-north">North Jordan</option>
+                            <option value="South" id="opt-south">South Jordan</option>
+                            <option value="East" id="opt-east">East Jordan</option>
+                            <option value="West" id="opt-west">West Jordan</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-7">
+                        <label class="form-label fw-bold" id="label-address">Specific Address Details</label>
+                        <input type="text" id="location" class="form-control" placeholder="Locating..." readonly
+                            required>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold" id="label-reason">Medical Condition / Why do you need our
+                            services?</label>
+                        <textarea id="medReason" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold" id="label-docs">Medical documents (PDF/Image)</label>
+                        <input type="file" id="docUpload" class="form-control" required>
+                    </div>
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-indigo w-100 shadow" id="btn-signup">Sign Up</button>
+                    </div>
+                    <div class="text-center">
+                        <span class="small text-muted" id="txt-have-account">already have an account?</span>
+                        <a href="login.html" class="small fw-bold text-decoration-none" id="link-signin">Sign In</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script>
+
+        //LOCATION
+        window.onload = function () {
+            const locInput = document.getElementById("location");
+
+            if (confirm("Allow location access to find services near you.")) {
+                if (navigator.geolocation) {
+                    locInput.value = "Locating...";
+
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        try {
+                            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+                            const data = await response.json();
+
+                            if (data.address) {
+                                const addr = data.address;
+                                const building = addr.house_number || "";
+                                const street = addr.road || "";
+                                const city = addr.city || addr.town || addr.village || "";
+                                const country = addr.country || "";
+
+                                const formattedAddress = `${building}${building ? ', ' : ''}${street}${street ? ', ' : ''}${city}${city ? ', ' : ''}${country}`;
+                                locInput.value = formattedAddress;
+                            } else {
+                                locInput.value = lat.toFixed(4) + ", " + lon.toFixed(4);
+                            }
+                        } catch (error) {
+                            locInput.value = lat.toFixed(4) + ", " + lon.toFixed(4);
+                        }
+
+                        locInput.readOnly = false;
+
+                    }, (error) => {
+                        locInput.value = "";
+                        locInput.placeholder = "GPS Denied. Please type address manually.";
+                        locInput.readOnly = false;
+                    });
+                }
+            } else {
+                locInput.value = "";
+                locInput.placeholder = "Please type your address manually. e.g. Amman, Jordan ";
+                locInput.readOnly = false;
+            }
+        };
+        //
+        document.getElementById('signupForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const pass = document.getElementById('pass').value;
+            const confirm = document.getElementById('confirmPass').value;
+            const age = parseInt(document.getElementById('age').value);
+            const fileInput = document.getElementById('docUpload');
+            const locationVal = document.getElementById("location").value;
+            const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : "No_File_Uploaded.pdf";
+
+            if (pass !== confirm) return alert("Passwords do not match!");
+
+            const userData = {
+                id: Date.now(),
+                fullName: document.getElementById('fullName').value,
+                age: age,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                password: pass,
+                zone: document.getElementById('zone').value,
+                locationDesc: locationVal,
+                medReason: document.getElementById('medReason').value,
+                fileName: fileName,
+                priority: age >= 65 ? "High" : "Normal",
+                status: "pending",
+                serviceTier: "regular",
+                adminNote: "",
+                proRequest: false,
+                appointment: null,
+                conflictReason: ""
+            };
+
+            let users = JSON.parse(localStorage.getItem('adv_users')) || [];
+            users.push(userData);
+            localStorage.setItem('adv_users', JSON.stringify(users));
+            localStorage.setItem('currentUserEmail', userData.email);
+
+            alert("Application submitted! check your care for updates");
+            window.location.href = "index.html";
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

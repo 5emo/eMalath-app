@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital | Ops Center</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f7fe; padding: 20px; font-family: 'Segoe UI', sans-serif; }
+        .h-card { background: white; border-radius: 15px; margin-bottom: 20px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .scheduled-card { border: 2px solid #10b981; background: #f0fdf4; }
+        .change-request-alert { background: #fee2e2; border-left: 4px solid #ef4444; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row mb-4 align-items-center">
+            <div class="col-sm-4"><h2 class="fw-bold text-primary">Hospital Management</h2></div>
+            <div class="col-sm-4">
+                <select id="zoneFilter" class="form-select shadow-sm" onchange="render()">
+                    <option value="North">North Amman</option><option value="South">South Amman</option>
+                    <option value="East">East Amman</option><option value="West">West Amman</option>
+                </select>
+            </div>
+            <div class="col-sm-4 text-end"><button class="btn btn-outline-primary fw-bold" onclick="render()">🔄 Refresh</button></div>
+        </div>
+        <div id="queue" class="row"></div>
+    </div>
+
+    <script>
+        const staffList = ["Dr. Ali (Specialist)", "Nurse Mona (General)", "Dr. Samer (Specialist)", "Nurse Rami (General)"];
+
+        function render() {
+            const queue = document.getElementById('queue');
+            const zone = document.getElementById('zoneFilter').value;
+            let users = JSON.parse(localStorage.getItem('adv_users')) || [];
+            queue.innerHTML = "";
+
+            // Show users who are approved AND have an active request or existing appointment
+            const activeUsers = users.filter(u => u.status === 'approved' && u.zone.includes(zone) && (u.checkupRequested || u.appointment));
+
+            activeUsers.forEach(u => {
+                const isScheduled = u.appointment && !u.appointment.completed;
+                const docFinished = u.appointment && u.appointment.doctorDone;
+                const col = document.createElement('div');
+                col.className = "col-12 col-md-6 col-lg-4";
+                
+                col.innerHTML = `
+                    <div class="card h-card p-4 ${isScheduled ? 'scheduled-card' : ''}">
+                        <div class="d-flex justify-content-between mb-2">
+                            <strong>${u.fullName}</strong> <span class="badge bg-primary">${u.serviceTier.toUpperCase()}</span>
+                        </div>
+                        
+                        ${u.conflictReason ? `
+                            <div class="change-request-alert mb-3">
+                                <strong>⚠️ Change Requested:</strong><br>
+                                "${u.conflictReason}"
+                            </div>
+                        ` : ''}
+
+                        <button class="btn btn-sm btn-outline-primary w-100 mb-3" onclick="alert('File: ${u.fileName}')">📥 Medical History</button>
+                        
+                        <p class="small text-muted mb-3">
+                            <strong>Address:</strong> ${u.locationDesc}<br>
+                            <strong>Phone:</strong> ${u.phone}
+                        </p>
+
+                        <select id="staff-${u.id}" class="form-select mb-2" ${isScheduled ? 'disabled' : ''}>
+                            <option value="">Select Staff...</option>
+                            ${staffList.map(s => `<option value="${s}" ${u.appointment?.staffName === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6"><input type="date" id="date-${u.id}" class="form-control" value="${u.appointment?.date || ''}" ${isScheduled ? 'disabled' : ''}></div>
+                            <div class="col-6"><input type="time" id="time-${u.id}" class="form-control" value="${u.appointment?.time || ''}" ${isScheduled ? 'disabled' : ''}></div>
+                        </div>
+
+                        ${isScheduled && docFinished ? 
+                            `<div class="alert alert-success py-1 small text-center mb-2">Doctor Finished Visit</div>
+                             <button class="btn btn-success w-100 fw-bold" onclick="completeVisit(${u.id})">Finalize Appointment</button>` : 
+                            isScheduled ? 
+                            `<button class="btn btn-secondary w-100 fw-bold" disabled>Doctor In Progress...</button>` :
+                            `<button class="btn btn-primary w-100 fw-bold" onclick="saveAssignment(${u.id})">Confirm Assignment</button>`
+                        }
+                    </div>`;
+                queue.appendChild(col);
+            });
+        }
+
+        function saveAssignment(id) {
+            const staff = document.getElementById(`staff-${id}`).value;
+            const date = document.getElementById(`date-${id}`).value;
+            const time = document.getElementById(`time-${id}`).value;
+            if(!staff || !date || !time) return alert("Please assign staff and time.");
+
+            let users = JSON.parse(localStorage.getItem('adv_users'));
+            const uIdx = users.findIndex(u => u.id === id);
+            
+            // Safety: 3-Hour Gap Logic
+            const newDT = new Date(`${date}T${time}`);
+            const conflict = users[uIdx].pastAppointments?.find(p => p.staffName === staff && Math.abs(newDT - new Date(`${p.date}T${p.time}`)) / 36e5 < 3);
+            if(conflict) return alert("Safety Conflict: Staff busy within 3 hours.");
+
+            // Clear the conflict reason once we assign a NEW provider
+            users[uIdx].appointment = { staffName: staff, date: date, time: time, completed: false, doctorDone: false };
+            users[uIdx].checkupRequested = false;
+            users[uIdx].conflictReason = ""; // Clear the alert once reassigned
+            
+            localStorage.setItem('adv_users', JSON.stringify(users));
+            render();
+        }
+
+        function completeVisit(id) {
+            let users = JSON.parse(localStorage.getItem('adv_users'));
+            const idx = users.findIndex(u => u.id === id);
+            if(!users[idx].pastAppointments) users[idx].pastAppointments = [];
+            users[idx].pastAppointments.push(users[idx].appointment);
+            users[idx].appointment = null;
+            users[idx].checkupRequested = false;
+            users[idx].conflictReason = ""; 
+            localStorage.setItem('adv_users', JSON.stringify(users));
+            render();
+        }
+        render();
+    </script>
+</body>
+</html>

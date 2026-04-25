@@ -1,0 +1,27 @@
+/*********************ELDERLY MODE***********/
+body.elderly-mode {
+    font-size: 1.25rem !important;
+}
+
+body.elderly-mode h1, 
+body.elderly-mode h2, 
+body.elderly-mode .header-title,
+body.elderly-mode p,
+body.elderly-mode label,
+body.elderly-mode span,
+body.elderly-mode b,
+body.elderly-mode div:not(.nav-item) {
+    font-weight: 800 !important;
+}
+
+body.elderly-mode input, 
+body.elderly-mode select, 
+body.elderly-mode button,
+body.elderly-mode .btn,
+body.elderly-mode .create,
+body.elderly-mode .sign {
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+}
+
+

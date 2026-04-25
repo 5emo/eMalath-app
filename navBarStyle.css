@@ -1,0 +1,67 @@
+/* navBarStyle.css */
+:root {
+    --primary-purple: #4F46E5;
+    --emergency-red: #CB1D43;
+    --soft-bg: #F8FAFC;
+}
+
+body {
+    background-color: #e2e8f0; 
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background-color: var(--soft-bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    overflow-x: hidden;
+}
+
+.content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 90px;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    height: 75px;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    z-index: 1000;
+}
+
+.nav-link-custom {
+    text-decoration: none;
+    color: #64748B;
+    font-size: 0.75rem;
+    padding-top: 10px;
+    transition: 0.2s;
+}
+
+.nav-link-custom.active {
+    color: var(--primary-purple);
+    font-weight: bold;
+}
+
+.nav-icon-img {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+}
+
+.nav-label {
+    display: inline-block;
+}

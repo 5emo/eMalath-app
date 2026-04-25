@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medications</title>
+    <script>
+       if ('serviceWorker' in navigator) {
+       navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+       }
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="navBarStyle.css">
+    <link rel="stylesheet" href="features/elderly.css">
+    <style>
+        :root {
+            --primary-purple: #4F46E5;
+            --soft-green: #34c759;
+        }
+
+        body {
+            background-color: #F8FAFC;
+            font-family: sans-serif;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 25px 10px 25px;
+        }
+
+        .add-text-btn {
+            color: #7a7eac;
+            background: none;
+            border: none;
+            font-weight: 500;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .calendar-strip {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+        }
+
+        .day-box {
+            text-align: center;
+            padding: 10px;
+            border-radius: 15px;
+            min-width: 60px;
+        }
+
+        .day-box.active {
+            background: var(--primary-purple);
+            color: white;
+            box-shadow: 0 4px 10px rgba(94, 92, 230, 0.3);
+        }
+
+        .time-header {
+            color: #000;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 20px 0 15px 0;
+        }
+
+        .med-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f8f8f8;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .med-card::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 20px;
+            bottom: 20px;
+            width: 3px;
+            background: var(--soft-green);
+            border-radius: 2px;
+        }
+
+        .check-icon {
+            color: var(--soft-green);
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: 2px solid var(--soft-green);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .take-btn {
+            background: var(--primary-purple);
+            border-radius: 25px;
+            border: none;
+            padding: 8px 24px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .completed {
+            opacity: 0.6;
+        }
+
+        .empty-state {
+            margin-top: 100px;
+            text-align: center;
+            color: #7a7eac;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="header-top">
+            <h1 class="fw-bold m-0" id="medication">Medications</h1>
+            <button class="add-text-btn" data-bs-toggle="modal" data-bs-target="#addModal" id="add">+ Add</button>
+        </div>
+
+        <div class="calendar-strip mb-3" id="calendar"></div>
+
+        <div class="px-4" id="schedule-container"></div>
+
+        <div class="modal fade" id="addModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 p-3" style="border-radius: 30px;">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="fw-bold" id="newMedication">New Medication</h5>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="medName" data-key="medNamee" class="form-control mb-3 p-3 rounded-pill"
+                            placeholder="Name (e.g. Vitamin D)">
+                        <input type="text" id="medDosage" data-key="medDosagee"
+                            class="form-control mb-3 p-3 rounded-pill" placeholder="Dosage (e.g. 10mg)">
+                        <input type="time" id="medTime" class="form-control mb-3 p-3 rounded-pill">
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button class="btn btn-primary w-100 p-3 rounded-pill fw-bold" onclick="saveAndReload()"
+                            id="saveMedication">Save Medication</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="navbar bottom-nav">
+            <div class="container-fluid px-0">
+                <div class="d-flex w-100 justify-content-around text-center">
+                    <a href="home.html" class="nav-link-custom">
+                        <img src="pictures/homeIcon.png" class="nav-icon-img" alt="Home"><br>
+                        <span class="nav-label" id="home">Home</span>
+                    </a>
+                    <a href="Medication.html" class="nav-link-custom active">
+                        <img src="pictures/medIcon.png" class="nav-icon-img" alt="Meds"><br>
+                        <span class="nav-label" id="med">Meds</span>
+                    </a>
+                    <a href="sos.html" class="nav-link-custom">
+                        <img src="pictures/sosIcon.png" class="nav-icon-img" alt="SOS"><br>
+                        <span class="nav-label text-danger fw-bold" id="sos">SOS</span>
+                    </a>
+                    <a href="care_hub.html" class="nav-link-custom">
+                        <img src="pictures/careIcon.png" class="nav-icon-img" alt="Care"><br>
+                        <span class="nav-label" id="care">Care</span>
+                    </a>
+                    <a href="profile.html" class="nav-link-custom">
+                        <img src="pictures/profileIcon.png" class="nav-icon-img" alt="Profile"><br>
+                        <span class="nav-label" id="profile">Profile</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <script src="Language/translation.js"></script>
+    <script src="Language/lang.js"></script>
+    <script src="features/elderly.js"></script>
+    <script>
+
+        const calendar = document.getElementById('calendar');
+        const now = new Date();
+        for (let i = -2; i <= 2; i++) {
+            const d = new Date(); d.setDate(now.getDate() + i);
+            calendar.innerHTML += `
+                <div class="day-box ${i === 0 ? 'active' : ''}">
+                    <div style="font-size: 12px; opacity: 0.7">${d.toLocaleString('en-US', { month: 'short' })}</div>
+                    <div class="fw-bold fs-5">${d.getDate()}</div>
+                </div>`;
+        }
+
+        let meds = JSON.parse(localStorage.getItem('persistent_meds')) || [];
+
+        function renderSchedule() {
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            if (meds.length === 0) {
+                container.innerHTML = `<div class="empty-state">
+                    <p class="fs-5" id="noMedicationAdded">No medication added</p>
+                    <p class="small" id="tapAddToGetStarted">Tap "+ Add" to get started</p>
+                </div>`;
+                return;
+            }
+
+            const groups = {
+                "Morning": meds.filter(m => m.time >= "05:00" && m.time < "12:00"),
+                "Afternoon": meds.filter(m => m.time >= "12:00" && m.time < "17:00"),
+                "Evening": meds.filter(m => (m.time >= "17:00" && m.time <= "23:59") || (m.time >= "00:00" && m.time < "05:00"))
+            };
+
+            for (const [title, list] of Object.entries(groups)) {
+                if (list.length > 0) {
+                    list.sort((a, b) => a.time.localeCompare(b.time));
+                    let sectionHTML = `<div class="time-group"><div class="time-header">${t(title)}</div>`;
+                    list.forEach((med) => {
+                        const medId = meds.indexOf(med);
+                        sectionHTML += `
+                            <div class="med-card d-flex justify-content-between align-items-center ${med.completed ? 'completed' : ''}">
+                                <div class="ps-3">
+                                    <div class="fw-bold fs-5">${med.name}</div>
+                                    <div class="text-muted small">${med.dosage} • ${formatAMPM(med.time)}</div>
+                                </div>
+                                <div>
+                                    ${med.completed
+                                ? '<div class="check-icon">✓</div>'
+                                : `<button id="take" class="take-btn" onclick="markAsTaken(${medId})">Take</button>`}
+                                </div>
+                            </div>`;
+                    });
+                    sectionHTML += `</div>`;
+                    container.innerHTML += sectionHTML;
+                }
+            }
+        }
+
+        function saveAndReload() {
+            const name = document.getElementById('medName').value;
+            const dosage = document.getElementById('medDosage').value;
+            const time = document.getElementById('medTime').value;
+
+            if (name && time) {
+                meds.push({ name, dosage: dosage || "1 Pill", time, completed: false });
+                localStorage.setItem('persistent_meds', JSON.stringify(meds));
+                renderSchedule();
+                bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+                document.getElementById('medName').value = '';
+                document.getElementById('medDosage').value = '';
+                document.getElementById('medTime').value = '';
+            }
+        }
+
+        function markAsTaken(id) {
+            meds[id].completed = true;
+            localStorage.setItem('persistent_meds', JSON.stringify(meds));
+            renderSchedule();
+        }
+
+        function formatAMPM(time) {
+            let [h, m] = time.split(':');
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${ampm}`;
+        }
+        //Language
+        function updateLanguage() {
+            const lang = localStorage.getItem("lang") || "en";
+            const isArabic = lang === "ar";
+            document.body.dir = isArabic ? "rtl" : "ltr";
+            for (const id in translations) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = isArabic ? translations[id].ar : translations[id].en;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", updateLanguage);
+        window.addEventListener("storage", (e) => {
+            if (e.key === "lang") updateLanguage();
+        });
+
+        renderSchedule();
+        //navbar 
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function () {
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        //
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
