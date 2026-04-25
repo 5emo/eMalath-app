@@ -1,6 +1,6 @@
 const CACHE_NAME = 'medtrack-cache-v1';
 const ASSETS = [
-  'login.html',
+  'index.html',
   'signup.html',
   'care_hub.html',
   'admin.html',
