@@ -1,7 +1,7 @@
 {
   "name": "eMalath",
   "short_name": "Malath",
-  "start_url": "login.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f4f7fe",
   "theme_color": "#4f46e5",
